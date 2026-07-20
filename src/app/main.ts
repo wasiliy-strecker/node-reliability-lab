@@ -2,9 +2,20 @@ import { loadConfig } from './config.js'
 import { ReliabilityServer } from './server.js'
 import { subscribeDiagnostics } from '../observability/diagnostics.js'
 
+const serializeLog = (record: Readonly<Record<string, unknown>>): string =>
+  `${JSON.stringify({ timestamp: new Date().toISOString(), ...record })}\n`
+
 const writeLog = (record: Readonly<Record<string, unknown>>): void => {
-  process.stdout.write(`${JSON.stringify({ timestamp: new Date().toISOString(), ...record })}\n`)
+  process.stdout.write(serializeLog(record))
 }
+
+const writeLogAndFlush = (record: Readonly<Record<string, unknown>>): Promise<void> =>
+  new Promise((resolve, reject) => {
+    process.stdout.write(serializeLog(record), (error) => {
+      if (error) reject(error)
+      else resolve()
+    })
+  })
 
 const unsubscribe = subscribeDiagnostics((event) => writeLog({ level: 'info', ...event }))
 let application: ReliabilityServer | undefined
@@ -22,11 +33,17 @@ try {
       signalCount === 1
         ? runningApplication.shutdown(signal)
         : runningApplication.forceShutdown(`${signal}:second-signal`)
-    void shutdown.then((result) => {
-      writeLog({ level: 'info', event: 'server.stopped', ...result })
-      unsubscribe()
-      process.exitCode = result.forced ? 1 : 0
-    })
+    void shutdown
+      .then(async (result) => {
+        await writeLogAndFlush({ level: 'info', event: 'server.stopped', ...result })
+        unsubscribe()
+        process.exitCode = result.forced ? 1 : 0
+      })
+      .catch((error: unknown) => {
+        unsubscribe()
+        process.stderr.write(`${error instanceof Error ? error.stack : String(error)}\n`)
+        process.exitCode = 1
+      })
   }
 
   process.on('SIGINT', handleSignal)
