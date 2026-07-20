@@ -1,0 +1,3 @@
+{"id":"evt-1001","type":"order.created","occurredAt":"2026-07-20T06:00:00.000Z","payload":{"customerId":"customer-42","currency":"EUR","amount":129.9}}
+{"id":"evt-1002","type":"order.confirmed","occurredAt":"2026-07-20T06:00:01.000Z","payload":{"customerId":"customer-42","channel":"web"}}
+{"id":"evt-1003","type":"order.packed","occurredAt":"2026-07-20T06:00:02.000Z","payload":{"warehouse":"berlin-1","items":3}}
