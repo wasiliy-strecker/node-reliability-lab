@@ -24,7 +24,6 @@ try {
   const runningApplication = new ReliabilityServer({ config: loadConfig(), logger: writeLog })
   application = runningApplication
   const address = await runningApplication.start()
-  writeLog({ level: 'info', event: 'server.started', ...address })
 
   let signalCount = 0
   const handleSignal = (signal: NodeJS.Signals): void => {
@@ -48,6 +47,7 @@ try {
 
   process.on('SIGINT', handleSignal)
   process.on('SIGTERM', handleSignal)
+  writeLog({ level: 'info', event: 'server.started', ...address })
 } catch (error) {
   writeLog({
     level: 'error',
