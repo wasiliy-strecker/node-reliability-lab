@@ -1,0 +1,39 @@
+name: GitHub release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.13.1
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify release state
+        run: pnpm verify
+      - name: Build release archive
+        run: node scripts/create-release-archive.mjs "$GITHUB_REF_NAME"
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/node-reliability-lab-*.tar.gz
+            artifacts/node-reliability-lab-*.sha256
+          generate_release_notes: true
